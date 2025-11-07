@@ -73,25 +73,38 @@ using (var scope = app.Services.CreateScope())
     }
 
     // Seed users...
+    // Seed users (med forkortet format)
     if (!db.Users.Any())
     {
         var passwordHasher = new PasswordHasher<User>();
         var restaurants = db.Restaurants.ToList();
+
         foreach (var r in restaurants)
         {
+            // Bestem forkortelse baseret på restaurant navn
+            string abbreviation = r.Name.ToLower() switch
+            {
+                "burgerhytten" => "bh",
+                "pullokiska" => "p",
+                "tervakoski" => "t",
+                _ => r.Name.Substring(0, 1).ToLower() // fallback: første bogstav
+            };
+
+            // Admin format: admin.bh@rh.dk
             var admin = new User
             {
                 Name = $"Admin {r.Name}",
-                Email = $"admin@{r.Name.Replace(" ", "").ToLower()}.dk",
+                Email = $"admin.{abbreviation}@rh.dk",
                 IsAdmin = true,
                 RestaurantId = r.Id
             };
             admin.PasswordHash = passwordHasher.HashPassword(admin, "admin123");
 
+            // User format: user.bh@rh.dk
             var user = new User
             {
                 Name = $"Medarbejder {r.Name}",
-                Email = $"user@{r.Name.Replace(" ", "").ToLower()}.dk",
+                Email = $"user.{abbreviation}@rh.dk",
                 IsAdmin = false,
                 RestaurantId = r.Id
             };
