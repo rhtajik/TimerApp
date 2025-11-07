@@ -1,13 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using TimerApp.Data;
 using TimerApp.Models;
+using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Services
 builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<AppDbContext>(o =>
-    o.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    o.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddAuthentication("Cookies")
     .AddCookie("Cookies", o =>
     {
@@ -36,30 +37,33 @@ using (var scope = app.Services.CreateScope())
         db.SaveChanges();
     }
 
-    // ?? Seed 1 admin + 1 medarbejder per restaurant (kun hvis ingen findes)
+    //seeding sektionen for users
     if (!db.Users.Any())
     {
+        var passwordHasher = new PasswordHasher<User>();
         var restaurants = db.Restaurants.ToList();
+
         foreach (var r in restaurants)
         {
-            db.Users.AddRange(
-                new User
-                {
-                    Name = $"Admin {r.Name}",
-                    Email = $"admin@{r.Name.Replace(" ", "").ToLower()}.dk",
-                    PasswordHash = "admin123",
-                    IsAdmin = true,
-                    RestaurantId = r.Id
-                },
-                new User
-                {
-                    Name = $"Medarbejder {r.Name}",
-                    Email = $"user@{r.Name.Replace(" ", "").ToLower()}.dk",
-                    PasswordHash = "user123",
-                    IsAdmin = false,
-                    RestaurantId = r.Id
-                }
-            );
+            var admin = new User
+            {
+                Name = $"Admin {r.Name}",
+                Email = $"admin@{r.Name.Replace(" ", "").ToLower()}.dk",
+                IsAdmin = true,
+                RestaurantId = r.Id
+            };
+            admin.PasswordHash = passwordHasher.HashPassword(admin, "admin123");
+
+            var user = new User
+            {
+                Name = $"Medarbejder {r.Name}",
+                Email = $"user@{r.Name.Replace(" ", "").ToLower()}.dk",
+                IsAdmin = false,
+                RestaurantId = r.Id
+            };
+            user.PasswordHash = passwordHasher.HashPassword(user, "user123");
+
+            db.Users.AddRange(admin, user);
         }
         db.SaveChanges();
     }
