@@ -9,18 +9,40 @@ var builder = WebApplication.CreateBuilder(args);
 // Services
 builder.Services.AddControllersWithViews();
 
-// FIX: Konverter PostgreSQL URL til Npgsql format
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-if (connectionString != null && connectionString.StartsWith("postgres://"))
+// >>> DEBUG: Hvad loader vi?
+var rawConnString = builder.Configuration.GetConnectionString("DefaultConnection");
+Console.WriteLine($"=== DEBUG: Raw connection string ===");
+Console.WriteLine($"Value: {(string.IsNullOrEmpty(rawConnString) ? "NULL OR EMPTY!" : rawConnString)}");
+Console.WriteLine($"StartsWith postgres://: {rawConnString?.StartsWith("postgres://")}");
+Console.WriteLine($"StartsWith Host=: {rawConnString?.StartsWith("Host=")}");
+
+// >>> FEJL: Hvis tom
+if (string.IsNullOrWhiteSpace(rawConnString))
 {
-    var uri = new Uri(connectionString);
-    var userInfo = uri.UserInfo.Split(':');
-    connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.Substring(1)};Username={userInfo[0]};Password={userInfo[1]}";
+    throw new InvalidOperationException("? MILJØVARIABEL ER TOM! Key: ConnectionStrings__DefaultConnection");
 }
 
-builder.Services.AddDbContext<AppDbContext>(o =>
-    o.UseNpgsql(connectionString));
+// >>> KONVERTER hvis URL
+var connectionString = rawConnString;
+if (rawConnString.StartsWith("postgres://"))
+{
+    try
+    {
+        var uri = new Uri(rawConnString);
+        var userInfo = uri.UserInfo.Split(':', 2);
+        var database = uri.AbsolutePath.Substring(1);
+        connectionString = $"Host={uri.Host};Port={uri.Port};Database={database};Username={userInfo[0]};Password={userInfo[1]}";
+        Console.WriteLine($"=== Konverteret til: {connectionString}");
+    }
+    catch (Exception ex)
+    {
+        throw new InvalidOperationException($"? URL parse fejl: {ex.Message}", ex);
+    }
+}
 
+builder.Services.AddDbContext<AppDbContext>(o => o.UseNpgsql(connectionString));
+
+// ... resten af din kode ...
 builder.Services.AddAuthentication("Cookies")
     .AddCookie("Cookies", o =>
     {
@@ -31,14 +53,15 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-// Resten af din kode (behold din seeding)
 Directory.CreateDirectory("App_Data");
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    Console.WriteLine("=== DB EnsureCreated start ===");
     db.Database.EnsureCreated();
+    Console.WriteLine("=== DB EnsureCreated færdig ===");
 
-    // Seed restauranter
+    // Seed...
     if (!db.Restaurants.Any())
     {
         db.Restaurants.AddRange(
@@ -49,12 +72,11 @@ using (var scope = app.Services.CreateScope())
         db.SaveChanges();
     }
 
-    // Seed users
+    // Seed users...
     if (!db.Users.Any())
     {
         var passwordHasher = new PasswordHasher<User>();
         var restaurants = db.Restaurants.ToList();
-
         foreach (var r in restaurants)
         {
             var admin = new User
