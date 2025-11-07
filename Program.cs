@@ -2,13 +2,25 @@ using Microsoft.EntityFrameworkCore;
 using TimerApp.Data;
 using TimerApp.Models;
 using Microsoft.AspNetCore.Identity;
+using System;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Services
 builder.Services.AddControllersWithViews();
+
+// FIX: Konverter PostgreSQL URL til Npgsql format
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (connectionString != null && connectionString.StartsWith("postgres://"))
+{
+    var uri = new Uri(connectionString);
+    var userInfo = uri.UserInfo.Split(':');
+    connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.Substring(1)};Username={userInfo[0]};Password={userInfo[1]}";
+}
+
 builder.Services.AddDbContext<AppDbContext>(o =>
-    o.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    o.UseNpgsql(connectionString));
+
 builder.Services.AddAuthentication("Cookies")
     .AddCookie("Cookies", o =>
     {
@@ -19,14 +31,14 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-// Ensure DB folder/file
+// Resten af din kode (behold din seeding)
 Directory.CreateDirectory("App_Data");
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.EnsureCreated();
 
-    // Seed restauranter (hvis ingen findes)
+    // Seed restauranter
     if (!db.Restaurants.Any())
     {
         db.Restaurants.AddRange(
