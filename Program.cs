@@ -9,40 +9,49 @@ var builder = WebApplication.CreateBuilder(args);
 // Services
 builder.Services.AddControllersWithViews();
 
-// >>> DEBUG: Hvad loader vi?
+// FIX: Tjek både postgres:// og postgresql://
 var rawConnString = builder.Configuration.GetConnectionString("DefaultConnection");
-Console.WriteLine($"=== DEBUG: Raw connection string ===");
-Console.WriteLine($"Value: {(string.IsNullOrEmpty(rawConnString) ? "NULL OR EMPTY!" : rawConnString)}");
-Console.WriteLine($"StartsWith postgres://: {rawConnString?.StartsWith("postgres://")}");
-Console.WriteLine($"StartsWith Host=: {rawConnString?.StartsWith("Host=")}");
-
-// >>> FEJL: Hvis tom
-if (string.IsNullOrWhiteSpace(rawConnString))
-{
-    throw new InvalidOperationException("? MILJØVARIABEL ER TOM! Key: ConnectionStrings__DefaultConnection");
-}
-
-// >>> KONVERTER hvis URL
 var connectionString = rawConnString;
-if (rawConnString.StartsWith("postgres://"))
+
+if (!string.IsNullOrWhiteSpace(rawConnString))
 {
-    try
+    Console.WriteLine($"=== DEBUG: Raw connection string ===");
+    Console.WriteLine($"Value: {rawConnString}");
+
+    // Konverter URL til Npgsql format (både postgres:// og postgresql://)
+    if (rawConnString.StartsWith("postgres://") || rawConnString.StartsWith("postgresql://"))
     {
-        var uri = new Uri(rawConnString);
-        var userInfo = uri.UserInfo.Split(':', 2);
-        var database = uri.AbsolutePath.Substring(1);
-        connectionString = $"Host={uri.Host};Port={uri.Port};Database={database};Username={userInfo[0]};Password={userInfo[1]}";
-        Console.WriteLine($"=== Konverteret til: {connectionString}");
+        try
+        {
+            var uri = new Uri(rawConnString);
+            var userInfo = uri.UserInfo.Split(':', 2);
+
+            // Nogle URL'er har ikke port - brug default 5432
+            var port = uri.Port > 0 ? uri.Port : 5432;
+
+            // Fjord leading slash fra databasenavn
+            var database = uri.AbsolutePath.Substring(1);
+
+            connectionString = $"Host={uri.Host};Port={port};Database={database};Username={userInfo[0]};Password={userInfo[1]}";
+            Console.WriteLine($"=== Konverteret til: {connectionString}");
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"? URL parse fejl: {ex.Message}", ex);
+        }
     }
-    catch (Exception ex)
+    else
     {
-        throw new InvalidOperationException($"? URL parse fejl: {ex.Message}", ex);
+        Console.WriteLine($"=== Bruger direkte: {rawConnString}");
     }
+}
+else
+{
+    throw new InvalidOperationException("? Connection string mangler!");
 }
 
 builder.Services.AddDbContext<AppDbContext>(o => o.UseNpgsql(connectionString));
 
-// ... resten af din kode ...
 builder.Services.AddAuthentication("Cookies")
     .AddCookie("Cookies", o =>
     {
@@ -61,7 +70,7 @@ using (var scope = app.Services.CreateScope())
     db.Database.EnsureCreated();
     Console.WriteLine("=== DB EnsureCreated færdig ===");
 
-    // Seed...
+    // Seed restauranter
     if (!db.Restaurants.Any())
     {
         db.Restaurants.AddRange(
@@ -72,8 +81,7 @@ using (var scope = app.Services.CreateScope())
         db.SaveChanges();
     }
 
-    // Seed users...
-    // Seed users (med forkortet format)
+    // Seed users
     if (!db.Users.Any())
     {
         var passwordHasher = new PasswordHasher<User>();
@@ -81,16 +89,14 @@ using (var scope = app.Services.CreateScope())
 
         foreach (var r in restaurants)
         {
-            // Bestem forkortelse baseret på restaurant navn
             string abbreviation = r.Name.ToLower() switch
             {
                 "burgerhytten" => "bh",
                 "pullokiska" => "p",
                 "tervakoski" => "t",
-                _ => r.Name.Substring(0, 1).ToLower() // fallback: første bogstav
+                _ => r.Name.Substring(0, 1).ToLower()
             };
 
-            // Admin format: admin.bh@rh.dk
             var admin = new User
             {
                 Name = $"Admin {r.Name}",
@@ -100,7 +106,6 @@ using (var scope = app.Services.CreateScope())
             };
             admin.PasswordHash = passwordHasher.HashPassword(admin, "admin123");
 
-            // User format: user.bh@rh.dk
             var user = new User
             {
                 Name = $"Medarbejder {r.Name}",
