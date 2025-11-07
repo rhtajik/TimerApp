@@ -26,7 +26,7 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.EnsureCreated();
 
-    // ?? Seed restauranter (hvis ingen findes)
+    // Seed restauranter (hvis ingen findes)
     if (!db.Restaurants.Any())
     {
         db.Restaurants.AddRange(
@@ -37,7 +37,7 @@ using (var scope = app.Services.CreateScope())
         db.SaveChanges();
     }
 
-    //seeding sektionen for users
+    // Seed users
     if (!db.Users.Any())
     {
         var passwordHasher = new PasswordHasher<User>();
