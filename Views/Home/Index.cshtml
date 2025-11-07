@@ -1,0 +1,39 @@
+@{
+    ViewData["Title"] = "Forside";
+    Layout = "_Layout";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow-sm rounded-4 p-4 text-center">
+            <h2 class="fw-bold mb-4">
+                <i class="bi bi-person-circle text-danger me-2"></i>Velkommen, @User.Identity!.Name
+            </h2>
+
+            <div class="d-grid gap-3">
+                <a class="btn btn-outline-danger btn-lg rounded-pill" asp-controller="TimeEntries" asp-action="Create">
+                    <i class="bi bi-plus-circle me-2"></i>Registrer timer i dag
+                </a>
+
+                <a class="btn btn-outline-primary btn-lg rounded-pill" asp-controller="TimeEntries" asp-action="Index">
+                    <i class="bi bi-clock-history me-2"></i>Se mine timer
+                </a>
+
+                <a class="btn btn-outline-success btn-lg rounded-pill" asp-controller="TimeEntries" asp-action="MonthlySum">
+                    <i class="bi bi-calendar-month me-2"></i>Månedssum
+                </a>
+
+                <a class="list-group-item list-group-item-action" asp-controller="Account" asp-action="ChangePassword">
+                    <i class="bi bi-key me-2"></i>Skift adgangskode
+                </a>
+
+                @if (User.FindFirst("IsAdmin")?.Value == "True")
+                {
+                    <a class="btn btn-outline-warning btn-lg rounded-pill" asp-controller="Admin" asp-action="Index">
+                        <i class="bi bi-gear me-2"></i>Administration
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,125 @@
+﻿:root {
+    --rh-red: #e2001a;
+    --rh-white: #ffffff;
+    --rh-light: #f8f9fa;
+    --rh-dark: #212529;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--rh-light);
+}
+
+.navbar {
+    background-color: var(--rh-red) !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,.15);
+}
+
+    .navbar-brand, .navbar-text, .navbar a {
+        color: var(--rh-white) !important;
+        font-weight: 600;
+    }
+
+        .navbar a:hover {
+            color: rgba(255,255,255,.85) !important;
+        }
+
+main {
+    padding: 2rem 0;
+}
+
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.08);
+}
+
+.btn-primary {
+    background-color: var(--rh-red);
+    border-color: var(--rh-red);
+    border-radius: 20px;
+    padding: .45rem 1.25rem;
+    font-weight: 600;
+    transition: all .2s;
+}
+
+    .btn-primary:hover {
+        background-color: #c00016;
+        border-color: #c00016;
+        transform: translateY(-1px);
+    }
+
+.btn-outline-secondary {
+    border-radius: 20px;
+    padding: .45rem 1.1rem;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(226,0,26,.05);
+}
+
+footer {
+    background-color: var(--rh-white);
+    border-top: 1px solid #dee2e6;
+    font-size: .85rem;
+}
+
+h1, h2, h3, h4, h5 {
+    color: var(--rh-dark);
+    font-weight: 600;
+}
+
+/* Mobil */
+@media (max-width: 576px) {
+    .btn {
+        width: 100%;
+        margin-bottom: .5rem;
+    }
+}
+
+
+/* RH color palette */
+:root {
+    --rh-red: #e2001a;
+    --rh-white: #ffffff;
+    --rh-light: #f8f9fa;
+}
+
+/* Navbar */
+.navbar-brand {
+    font-size: 1.25rem;
+}
+
+.navbar-dark .btn-outline-light:hover {
+    background-color: var(--rh-white);
+    color: var(--rh-red);
+}
+
+/* Cards */
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.08);
+}
+
+/* Buttons */
+.btn-primary {
+    background-color: var(--rh-red);
+    border-color: var(--rh-red);
+    border-radius: 20px;
+    padding: .45rem 1.25rem;
+    font-weight: 600;
+    transition: all .2s;
+}
+
+    .btn-primary:hover {
+        background-color: #c00016;
+        border-color: #c00016;
+        transform: translateY(-1px);
+    }
+
+/* Footer */
+footer {
+    background-color: var(--rh-white);
+    border-top: 1px solid #dee2e6;
+}
