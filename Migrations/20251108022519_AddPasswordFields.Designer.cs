@@ -12,7 +12,7 @@ using TimerApp.Data;
 namespace TimerApp.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251108021639_AddPasswordFields")]
+    [Migration("20251108022519_AddPasswordFields")]
     partial class AddPasswordFields
     {
         /// <inheritdoc />
