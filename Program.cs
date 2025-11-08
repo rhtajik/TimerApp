@@ -47,9 +47,7 @@ if (!string.IsNullOrWhiteSpace(rawConnString))
     }
 }
 else
-{
     throw new InvalidOperationException("? Connection string mangler!");
-}
 
 builder.Services.AddDbContext<AppDbContext>(o => o.UseNpgsql(connectionString));
 
@@ -73,9 +71,9 @@ Directory.CreateDirectory("App_Data");
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    Console.WriteLine("=== DB EnsureCreated start ===");
-    db.Database.EnsureCreated();
-    Console.WriteLine("=== DB EnsureCreated færdig ===");
+    Console.WriteLine("=== Running Migrations ===");
+    db.Database.Migrate();  // ? KORREKT: Kør migrations
+    Console.WriteLine("=== Migrations completed ===");
 
     // Seed restauranter
     if (!db.Restaurants.Any())
@@ -129,7 +127,7 @@ using (var scope = app.Services.CreateScope())
         db.SaveChanges();
     }
 
-    // ?? ONLINE DEBUG: Logger alle brugere ved app start (SEK KUN ÉN GANG!)
+    // ?? ONLINE DEBUG: Vis alle brugere ved app start (SEK KUN ÉN GANG!)
     Console.WriteLine("\n=== ONLINE DEBUG: Aktive brugere ===");
     var allUsers = db.Users.Include(u => u.Restaurant).ToList();
     foreach (var u in allUsers)
