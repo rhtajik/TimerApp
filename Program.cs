@@ -87,7 +87,7 @@ using (var scope = app.Services.CreateScope())
     }
 
     // Seed users
-    if (!db.Users.Any())
+    if (true)
     {
         var passwordHasher = new PasswordHasher<User>();
         var restaurants = db.Restaurants.ToList();
