@@ -12,8 +12,8 @@ using TimerApp.Data;
 namespace TimerApp.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251108012728_AddPasswordChangeFields")]
-    partial class AddPasswordChangeFields
+    [Migration("20251108021639_AddPasswordFields")]
+    partial class AddPasswordFields
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -80,11 +80,17 @@ namespace TimerApp.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<int?>("CreatedByUserId")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<bool>("IsAdmin")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("MustChangePassword")
                         .HasColumnType("boolean");
 
                     b.Property<string>("Name")
