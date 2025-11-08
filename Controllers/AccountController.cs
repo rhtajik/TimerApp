@@ -65,7 +65,7 @@ public class AccountController : Controller
         // ... resten af koden forbliver den samme som før
         var user = await _db.Users
             .Include(u => u.Restaurant)
-            .SingleOrDefaultAsync(u => EF.Functions.ILike(u.Email, vm.Email) && u.RestaurantId == vm.RestaurantId);
+            .FirstOrDefaultAsync(u => EF.Functions.ILike(u.Email, vm.Email) && u.RestaurantId == vm.RestaurantId);
 
         if (user == null)
         {
