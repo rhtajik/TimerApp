@@ -50,14 +50,29 @@ public class AccountController : Controller
             vm.RestaurantList = await GetRestaurantList();
             return View(vm);
         }
-        else
+
+        // ? DEFENSIVT TJEK: Håndter ødelagte hashes
+        if (string.IsNullOrWhiteSpace(user.PasswordHash))
         {
-            Console.WriteLine($"? LOGIN: Bruger fundet: {user.Email}, Admin={user.IsAdmin}, MustChangePassword={user.MustChangePassword}");
-            Console.WriteLine($"   PW Hash: {user.PasswordHash.Substring(0, 20)}...");
+            Console.WriteLine($"? LOGIN FEJLET: Tom hash for {user.Email}");
+            ModelState.AddModelError("", "Ugyldigt login.");
+            vm.RestaurantList = await GetRestaurantList();
+            return View(vm);
         }
 
         var passwordHasher = new PasswordHasher<User>();
-        var result = passwordHasher.VerifyHashedPassword(user, user.PasswordHash, vm.Password);
+        PasswordVerificationResult result;
+        try
+        {
+            result = passwordHasher.VerifyHashedPassword(user, user.PasswordHash, vm.Password);
+        }
+        catch (FormatException)
+        {
+            Console.WriteLine($"? LOGIN FEJLET: Ugyldig hash format for {user.Email}");
+            ModelState.AddModelError("", "Ugyldigt login.");
+            vm.RestaurantList = await GetRestaurantList();
+            return View(vm);
+        }
 
         if (result == PasswordVerificationResult.Failed)
         {
@@ -65,6 +80,10 @@ public class AccountController : Controller
             vm.RestaurantList = await GetRestaurantList();
             return View(vm);
         }
+
+        // ? Success - log bruger info
+        Console.WriteLine($"? LOGIN: Bruger fundet: {user.Email}, Admin={user.IsAdmin}, MustChangePassword={user.MustChangePassword}");
+        Console.WriteLine($"   PW Hash: {user.PasswordHash.Substring(0, 20)}...");
 
         var claims = new List<Claim>
         {
@@ -84,7 +103,7 @@ public class AccountController : Controller
             ExpiresUtc = DateTimeOffset.UtcNow.AddHours(8)
         });
 
-        // ? Redirect til ChangePassword hvis første login
+        // Redirect til ChangePassword hvis første login
         if (user.MustChangePassword)
         {
             return RedirectToAction("ChangePassword", new { firstLogin = true });
@@ -159,7 +178,7 @@ public class AccountController : Controller
         return RedirectToAction("Index", "Home");
     }
 
-    // ? Helper metode
+    // Helper metode
     private async Task<List<SelectListItem>> GetRestaurantList()
     {
         return await _db.Restaurants
