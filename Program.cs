@@ -127,20 +127,39 @@ using (var scope = app.Services.CreateScope())
         db.SaveChanges();
     }
 
+
+
     // ?? ONE-TIME FIX: Sørg for at alle passwords er korrekte
-    // Dette kører HVER gang, men er hurtigt
     Console.WriteLine("=== SIKRER KENDTE PASSWORDS ===");
     var fixHasher = new PasswordHasher<User>();
     var allUsers = db.Users.ToList();
+
     foreach (var u in allUsers)
     {
-        // Tjek om password allerede er korrekt
         var testPassword = u.IsAdmin ? "admin123" : "user123";
-        var verifyResult = fixHasher.VerifyHashedPassword(u, u.PasswordHash, testPassword);
+
+        // ? DEFENSIVT TJEK: Spring over hvis hash er tom eller ugyldig
+        if (string.IsNullOrWhiteSpace(u.PasswordHash))
+        {
+            Console.WriteLine($"   ?? Manglende hash for {u.Email} - opretter ny!");
+            u.PasswordHash = fixHasher.HashPassword(u, testPassword);
+            continue;
+        }
+
+        PasswordVerificationResult verifyResult;
+        try
+        {
+            verifyResult = fixHasher.VerifyHashedPassword(u, u.PasswordHash, testPassword);
+        }
+        catch (FormatException)
+        {
+            Console.WriteLine($"   ?? Ugyldig hash format for {u.Email} - reparerer!");
+            u.PasswordHash = fixHasher.HashPassword(u, testPassword);
+            continue;
+        }
 
         if (verifyResult == PasswordVerificationResult.Failed)
         {
-            // Password er forkert - sæt det korrekt
             u.PasswordHash = fixHasher.HashPassword(u, testPassword);
             Console.WriteLine($"   ?? Fixet password for {u.Email}");
         }
@@ -151,6 +170,9 @@ using (var scope = app.Services.CreateScope())
     }
     db.SaveChanges();
     Console.WriteLine("=================================\n");
+
+
+
 
     // Debug output
     Console.WriteLine("\n=== ONLINE DEBUG: Aktive brugere ===");
