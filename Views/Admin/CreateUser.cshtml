@@ -1,4 +1,4 @@
-@model TimerApp.Models.User
+@model TimerApp.ViewModels.CreateUserVM
 @{
     ViewData["Title"] = "Ny medarbejder";
     Layout = "_Layout";
@@ -10,6 +10,17 @@
             <h4 class="mb-4 text-center fw-bold">
                 <i class="bi bi-person-plus text-danger me-2"></i>Ny medarbejder
             </h4>
+
+            @if (TempData["TempPassword"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <h6 class="alert-heading"><i class="bi bi-key-fill me-2"></i>Midlertidig adgangskode</h6>
+                    <p class="mb-0"><strong class="fs-4">@TempData["TempPassword"]</strong></p>
+                    <p class="mb-0 small">For: <strong>@TempData["NewUserEmail"]</strong></p>
+                    <p class="mb-0 small text-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i>Gem denne nu! Den vises kun én gang.</p>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
 
             <form asp-action="CreateUser">
                 <div asp-validation-summary="ModelOnly" class="alert alert-danger small"></div>
@@ -26,19 +37,13 @@
                     <span asp-validation-for="Email" class="text-danger"></span>
                 </div>
 
-                <!-- PASSWORD FELT TILFØJET -->
-                <div class="mb-3">
-                    <label class="form-label fw-600">Adgangskode</label>
-                    <input type="password" class="form-control" name="PasswordHash" placeholder="Indtast adgangskode" required />
-                </div>
-
                 <div class="form-check mb-4">
                     <input asp-for="IsAdmin" class="form-check-input" id="adminCheck" />
                     <label class="form-check-label" for="adminCheck">Admin-bruger</label>
                 </div>
 
                 <button type="submit" class="btn btn-primary w-100 rounded-pill">
-                    <i class="bi bi-check-circle me-2"></i>Opret
+                    <i class="bi bi-shield-check me-2"></i>Opret med automatisk adgangskode
                 </button>
 
                 <div class="text-center mt-3">
