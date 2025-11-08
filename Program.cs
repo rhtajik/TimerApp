@@ -72,7 +72,7 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     Console.WriteLine("=== Running Migrations ===");
-    db.Database.Migrate();  // ? KORREKT: Kør migrations
+    db.Database.Migrate();  // ? Kør migrations
     Console.WriteLine("=== Migrations completed ===");
 
     // Seed restauranter
@@ -86,8 +86,8 @@ using (var scope = app.Services.CreateScope())
         db.SaveChanges();
     }
 
-    // Seed users
-    if (true)
+    // Seed users - KUN hvis tabellen er tom
+    if (!db.Users.Any())
     {
         var passwordHasher = new PasswordHasher<User>();
         var restaurants = db.Restaurants.ToList();
@@ -108,7 +108,7 @@ using (var scope = app.Services.CreateScope())
                 Email = $"admin.{abbreviation}@rh.dk",
                 IsAdmin = true,
                 RestaurantId = r.Id,
-                MustChangePassword = false // Eksisterende admins skal ikke skifte
+                MustChangePassword = false
             };
             admin.PasswordHash = passwordHasher.HashPassword(admin, "admin123");
 
@@ -118,7 +118,7 @@ using (var scope = app.Services.CreateScope())
                 Email = $"user.{abbreviation}@rh.dk",
                 IsAdmin = false,
                 RestaurantId = r.Id,
-                MustChangePassword = false // Eksisterende brugere skal ikke skifte
+                MustChangePassword = false
             };
             user.PasswordHash = passwordHasher.HashPassword(user, "user123");
 
@@ -127,10 +127,35 @@ using (var scope = app.Services.CreateScope())
         db.SaveChanges();
     }
 
-    // ?? ONLINE DEBUG: Vis alle brugere ved app start (SEK KUN ÉN GANG!)
-    Console.WriteLine("\n=== ONLINE DEBUG: Aktive brugere ===");
-    var allUsers = db.Users.Include(u => u.Restaurant).ToList();
+    // ?? ONE-TIME FIX: Sørg for at alle passwords er korrekte
+    // Dette kører HVER gang, men er hurtigt
+    Console.WriteLine("=== SIKRER KENDTE PASSWORDS ===");
+    var fixHasher = new PasswordHasher<User>();
+    var allUsers = db.Users.ToList();
     foreach (var u in allUsers)
+    {
+        // Tjek om password allerede er korrekt
+        var testPassword = u.IsAdmin ? "admin123" : "user123";
+        var verifyResult = fixHasher.VerifyHashedPassword(u, u.PasswordHash, testPassword);
+
+        if (verifyResult == PasswordVerificationResult.Failed)
+        {
+            // Password er forkert - sæt det korrekt
+            u.PasswordHash = fixHasher.HashPassword(u, testPassword);
+            Console.WriteLine($"   ?? Fixet password for {u.Email}");
+        }
+        else
+        {
+            Console.WriteLine($"   ? Password allerede korrekt for {u.Email}");
+        }
+    }
+    db.SaveChanges();
+    Console.WriteLine("=================================\n");
+
+    // Debug output
+    Console.WriteLine("\n=== ONLINE DEBUG: Aktive brugere ===");
+    var debugUsers = db.Users.Include(u => u.Restaurant).ToList();
+    foreach (var u in debugUsers)
     {
         Console.WriteLine($"ID:{u.Id} | Email: {u.Email} | Admin: {u.IsAdmin} | Restaurant: {u.Restaurant?.Name}");
     }
