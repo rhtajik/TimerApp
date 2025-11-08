@@ -45,9 +45,15 @@ public class AccountController : Controller
 
         if (user == null)
         {
+            Console.WriteLine($"? LOGIN FEJLET: Bruger ikke fundet med Email={vm.Email} og RestaurantId={vm.RestaurantId}");
             ModelState.AddModelError("", "Ugyldigt login.");
             vm.RestaurantList = await GetRestaurantList();
             return View(vm);
+        }
+        else
+        {
+            Console.WriteLine($"? LOGIN: Bruger fundet: {user.Email}, Admin={user.IsAdmin}, MustChangePassword={user.MustChangePassword}");
+            Console.WriteLine($"   PW Hash: {user.PasswordHash.Substring(0, 20)}...");
         }
 
         var passwordHasher = new PasswordHasher<User>();
