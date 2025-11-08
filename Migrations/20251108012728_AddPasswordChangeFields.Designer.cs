@@ -12,8 +12,8 @@ using TimerApp.Data;
 namespace TimerApp.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251107215107_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20251108012728_AddPasswordChangeFields")]
+    partial class AddPasswordChangeFields
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
