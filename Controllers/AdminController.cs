@@ -6,7 +6,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using TimerApp.Data;
 using TimerApp.Models;
-
+using Microsoft.AspNetCore.Identity; // ? TILFØJ DENNE!
 
 namespace TimerApp.Controllers;
 
@@ -36,9 +36,11 @@ public class AdminController : Controller
     {
         if (User.FindFirst("IsAdmin")?.Value != "True") return Forbid();
 
-        // ? Automatisk egen restaurant
+        // ? KORREKT: Hash password før det gemmes
         model.RestaurantId = int.Parse(User.FindFirst("RestaurantId")!.Value);
-        model.PasswordHash = model.Email; // midlertidigt
+
+        var passwordHasher = new PasswordHasher<User>();
+        model.PasswordHash = passwordHasher.HashPassword(model, model.PasswordHash); // Forventer password i PasswordHash feltet
 
         _db.Users.Add(model);
         await _db.SaveChangesAsync();

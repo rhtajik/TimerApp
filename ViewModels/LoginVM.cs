@@ -5,9 +5,16 @@ namespace TimerApp.ViewModels;
 
 public class LoginVM
 {
-    [Required] public string Email { get; set; } = "";
-    [Required] public string Password { get; set; } = "";
+    [Required]
+    [EmailAddress] // Validerer at det er en gyldig email
+    public string Email { get; set; }
 
+    [Required]
+    [DataType(DataType.Password)] // Fortæller browseren det er et password-felt
+    public string Password { get; set; }
+
+    [Required]
     public int RestaurantId { get; set; }
-    public List<SelectListItem>? RestaurantList { get; set; }
+
+    public List<SelectListItem> RestaurantList { get; set; }
 }
