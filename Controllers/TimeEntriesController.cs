@@ -39,21 +39,19 @@ public class TimeEntriesController : Controller
 
         var uid = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
 
-        var startDateTime = vm.Date.Date.Add(vm.StartTime);
-        var endDateTime = vm.Date.Date.Add(vm.EndTime);
-
         _db.TimeEntries.Add(new TimeEntry
         {
             UserId = uid,
             Date = vm.Date.Date,
-            StartTime = DateTime.SpecifyKind(startDateTime, DateTimeKind.Utc),
-            EndTime = DateTime.SpecifyKind(endDateTime, DateTimeKind.Utc),
+            StartTime = DateTime.SpecifyKind(vm.StartTime, DateTimeKind.Utc),
+            EndTime = DateTime.SpecifyKind(vm.EndTime, DateTimeKind.Utc),
             Note = vm.Note
         });
 
         await _db.SaveChangesAsync();
         return RedirectToAction(nameof(Index));
     }
+    
 
 
 
