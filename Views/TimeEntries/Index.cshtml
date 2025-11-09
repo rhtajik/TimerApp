@@ -30,10 +30,10 @@
                 {
                     <tr>
                         <td>@item.Date.ToString("ddd d/M")</td>
-                        <td>@item.StartTime.ToString(@"hh\:mm")</td>
-                        <td>@item.EndTime.ToString(@"hh\:mm")</td>
+                        <td>@item.StartTime.ToString("HH:mm")</td>
+                        <td>@(item.EndTime?.ToString("HH:mm") ?? "-")</td>
                         <td class="text-center">
-                            <span class="badge bg-danger rounded-pill">@item.Hours</span>
+                            <span class="badge bg-danger rounded-pill">@item.Hours.ToString("F2")</span>
                         </td>
                         <td class="text-end">
                             <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline"
