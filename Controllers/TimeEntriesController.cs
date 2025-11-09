@@ -28,22 +28,36 @@ public class TimeEntriesController : Controller
 
     public IActionResult Create() => View(new TimeEntryVM { Date = DateTime.Today });
 
+
+
+
+
     [HttpPost]
     public async Task<IActionResult> Create(TimeEntryVM vm)
     {
         if (!ModelState.IsValid) return View(vm);
+
         var uid = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+
+        // Konverter Date + TimeSpan til DateTime med UTC
+        var startDateTime = vm.Date.Date.Add(vm.StartTime);
+        var endDateTime = vm.Date.Date.Add(vm.EndTime);
+
         _db.TimeEntries.Add(new TimeEntry
         {
             UserId = uid,
-            Date = vm.Date,
-            StartTime = vm.StartTime,
-            EndTime = vm.EndTime,
+            Date = vm.Date.Date,
+            StartTime = DateTime.SpecifyKind(startDateTime, DateTimeKind.Utc), // ??
+            EndTime = DateTime.SpecifyKind(endDateTime, DateTimeKind.Utc), // ??
             Note = vm.Note
         });
+
         await _db.SaveChangesAsync();
         return RedirectToAction(nameof(Index));
     }
+
+
+
 
     public async Task<IActionResult> MonthlySum()
     {
