@@ -30,7 +30,6 @@ public class AccountController : Controller
         return View(vm);
     }
 
-
     [HttpPost]
     public async Task<IActionResult> Login(LoginVM vm)
     {
@@ -62,7 +61,6 @@ public class AccountController : Controller
 
         Console.WriteLine("? ModelState er gyldig, fortsætter med brugersøgning...");
 
-        // ... resten af koden forbliver den samme som før
         var user = await _db.Users
             .Include(u => u.Restaurant)
             .FirstOrDefaultAsync(u => EF.Functions.ILike(u.Email, vm.Email) && u.RestaurantId == vm.RestaurantId);
@@ -75,10 +73,10 @@ public class AccountController : Controller
             return View(vm);
         }
 
-        // ... resten af metoden som før
+        // ? DEFENSIVT TJEK: Håndter ødelagte hashes
         if (string.IsNullOrWhiteSpace(user.PasswordHash))
         {
-            Console.WriteLine($"? FEJL: PasswordHash er tom!");
+            Console.WriteLine($"? LOGIN FEJLET: Tom hash for {user.Email}");
             ModelState.AddModelError("", "Ugyldigt login.");
             vm.RestaurantList = await GetRestaurantList();
             return View(vm);
@@ -92,7 +90,7 @@ public class AccountController : Controller
         }
         catch (FormatException)
         {
-            Console.WriteLine($"? FEJL: Ugyldig hash format for {user.Email}");
+            Console.WriteLine($"? LOGIN FEJLET: Ugyldig hash format for {user.Email}");
             ModelState.AddModelError("", "Ugyldigt login.");
             vm.RestaurantList = await GetRestaurantList();
             return View(vm);
@@ -100,30 +98,34 @@ public class AccountController : Controller
 
         if (result == PasswordVerificationResult.Failed)
         {
-            Console.WriteLine($"? FEJL: Password matcher ikke for {user.Email}");
             ModelState.AddModelError("", "Ugyldigt login.");
             vm.RestaurantList = await GetRestaurantList();
             return View(vm);
         }
 
-        Console.WriteLine($"? Password korrekt, logger ind...");
+        // ? Success - log bruger info
+        Console.WriteLine($"? LOGIN: Bruger fundet: {user.Email}, Admin={user.IsAdmin}, MustChangePassword={user.MustChangePassword}");
+        Console.WriteLine($"   PW Hash: {user.PasswordHash.Substring(0, 20)}...");
 
         var claims = new List<Claim>
-    {
-        new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-        new(ClaimTypes.Name, user.Name),
-        new("IsAdmin", user.IsAdmin.ToString()),
-        new("RestaurantId", user.RestaurantId.ToString()),
-        new("MustChangePassword", user.MustChangePassword.ToString())
-    };
+        {
+            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new(ClaimTypes.Name, user.Name),
+            new("IsAdmin", user.IsAdmin.ToString()),
+            new("RestaurantId", user.RestaurantId.ToString()),
+            new("MustChangePassword", user.MustChangePassword.ToString())
+        };
 
         var id = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+
+        // ONLINE-SIKKER cookie
         await HttpContext.SignInAsync(new ClaimsPrincipal(id), new AuthenticationProperties
         {
             IsPersistent = true,
             ExpiresUtc = DateTimeOffset.UtcNow.AddHours(8)
         });
 
+        // Redirect til ChangePassword hvis første login
         if (user.MustChangePassword)
         {
             return RedirectToAction("ChangePassword", new { firstLogin = true });
@@ -131,10 +133,6 @@ public class AccountController : Controller
 
         return RedirectToAction("Index", "Home");
     }
-
-
-
-
 
     public async Task<IActionResult> Logout()
     {
