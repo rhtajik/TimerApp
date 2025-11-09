@@ -39,7 +39,6 @@ public class TimeEntriesController : Controller
 
         var uid = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
 
-        // Konverter Date + TimeSpan til DateTime med UTC
         var startDateTime = vm.Date.Date.Add(vm.StartTime);
         var endDateTime = vm.Date.Date.Add(vm.EndTime);
 
@@ -47,8 +46,8 @@ public class TimeEntriesController : Controller
         {
             UserId = uid,
             Date = vm.Date.Date,
-            StartTime = DateTime.SpecifyKind(startDateTime, DateTimeKind.Utc), // ??
-            EndTime = DateTime.SpecifyKind(endDateTime, DateTimeKind.Utc), // ??
+            StartTime = DateTime.SpecifyKind(startDateTime, DateTimeKind.Utc),
+            EndTime = DateTime.SpecifyKind(endDateTime, DateTimeKind.Utc),
             Note = vm.Note
         });
 
@@ -71,8 +70,7 @@ public class TimeEntriesController : Controller
                                .ToListAsync();
 
         // Beregn timer
-        decimal sum = entries.Sum(t => (decimal)(t.EndTime - t.StartTime).TotalHours);
-
+        decimal sum = entries.Sum(t => (decimal)(t.EndTime.HasValue ? (t.EndTime.Value - t.StartTime).TotalHours : 0));
         ViewBag.Sum = sum;
         return View();
     }

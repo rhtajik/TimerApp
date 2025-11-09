@@ -19,46 +19,15 @@
                 <i class="bi bi-clock-history me-2"></i>RH Timer
             </a>
 
-            <!-- Mobil menu knap -->
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMenu">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-
-            <!-- Menu indhold -->
-            <div class="collapse navbar-collapse" id="navbarMenu">
-                <ul class="navbar-nav me-auto">
-                    @if (User.Identity?.IsAuthenticated == true)
-                    {
-                        <li class="nav-item">
-                            <a class="nav-link" asp-controller="Home" asp-action="Index">
-                                <i class="bi bi-house me-1"></i>Home
-                            </a>
-                        </li>
-                        
-                        @{
-                            var isAdmin = User.Claims.FirstOrDefault(c => c.Type == "IsAdmin")?.Value == "True";
-                            if (isAdmin)
-                            {
-                                <li class="nav-item">
-                                    <a class="nav-link" asp-controller="Admin" asp-action="CreateUser">
-                                        <i class="bi bi-person-plus me-1"></i>Opret bruger
-                                    </a>
-                                </li>
-                            }
-                        }
-                    }
-                </ul>
-
-                @if (User.Identity?.IsAuthenticated == true)
-                {
-                    <div class="d-flex align-items-center text-white">
-                        <span class="me-2 d-none d-sm-block">@User.Identity.Name</span>
-                        <a class="btn btn-sm btn-outline-light" asp-controller="Account" asp-action="Logout">
-                            <i class="bi bi-box-arrow-right me-1"></i>Log af
-                        </a>
-                    </div>
-                }
-            </div>
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <div class="d-flex align-items-center text-white">
+                    <span class="me-2 d-none d-sm-block">@User.Identity.Name</span>
+                    <a class="btn btn-sm btn-outline-light" asp-controller="Account" asp-action="Logout">
+                        <i class="bi bi-box-arrow-right me-1"></i>Log af
+                    </a>
+                </div>
+            }
         </div>
     </nav>
 
