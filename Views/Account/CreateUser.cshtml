@@ -41,7 +41,9 @@
 
                 <div class="mb-3">
                     <label asp-for="TempPassword" class="form-label fw-600">Midlertidigt password</label>
-                    <input asp-for="TempPassword" type="password" class="form-control" />
+                    <input asp-for="TempPassword" type="password" class="form-control"
+                           value="@(TempData["TempPassword"] ?? "")" readonly />
+                    <span class="text-muted small">Dette password vises kun én gang. Kopier det!</span>
                     <span asp-validation-for="TempPassword" class="text-danger"></span>
                 </div>
 

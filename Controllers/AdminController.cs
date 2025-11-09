@@ -46,7 +46,7 @@ public class AdminController : Controller
         if (User.FindFirst("IsAdmin")?.Value != "True") return Forbid();
 
         var vm = new CreateUserVM();
-        vm.RestaurantList = await GetRestaurantList();
+        vm.RestaurantList = await GetRestaurantList(); // ?? Bruger helper nedenfor
         return View(vm);
     }
 
@@ -61,8 +61,7 @@ public class AdminController : Controller
             return View(vm);
         }
 
-        // Tjek om email allerede eksisterer i samme restaurant
-        var restaurantId = int.Parse(User.FindFirst("RestaurantId")!.Value);
+        var restaurantId = int.Parse(User.FindFirst("RestaurantId")!.Value); // ?? Rettet til .Value
         if (await _db.Users.AnyAsync(u => u.Email.ToLower() == vm.Email.ToLower() && u.RestaurantId == restaurantId))
         {
             ModelState.AddModelError(nameof(vm.Email), "Denne email er allerede registreret.");
@@ -70,8 +69,8 @@ public class AdminController : Controller
             return View(vm);
         }
 
-        var tempPassword = GenerateTempPassword();
         var passwordHasher = new PasswordHasher<User>();
+        var tempPassword = GenerateTempPassword();
         var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
         var newUser = new User
@@ -81,22 +80,23 @@ public class AdminController : Controller
             IsAdmin = vm.IsAdmin,
             RestaurantId = restaurantId,
             CreatedByUserId = currentUserId,
-            MustChangePassword = true // ? Vigtigt: Tving password-skift
+            MustChangePassword = true
         };
 
         newUser.PasswordHash = passwordHasher.HashPassword(newUser, tempPassword);
+        Console.WriteLine($"? NY BRUGER: {vm.Email} / Temp password: {tempPassword}");
 
         _db.Users.Add(newUser);
         await _db.SaveChangesAsync();
 
-        // Vis den midlertidige adgangskode til admin én gang
         TempData["TempPassword"] = tempPassword;
         TempData["NewUserEmail"] = vm.Email;
 
         return RedirectToAction(nameof(Index));
     }
 
-    private async Task<List<SelectListItem>> GetRestaurantList()
+    // ?? Flyt GetRestaurantList HER (public så View'en kan bruge den)
+    public async Task<List<SelectListItem>> GetRestaurantList()
     {
         return await _db.Restaurants
             .OrderBy(r => r.Name)
