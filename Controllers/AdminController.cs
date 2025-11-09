@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
@@ -8,7 +10,6 @@ using System.Threading.Tasks;
 using TimerApp.Data;
 using TimerApp.Models;
 using TimerApp.ViewModels;
-using Microsoft.AspNetCore.Identity;
 
 namespace TimerApp.Controllers;
 
@@ -40,20 +41,32 @@ public class AdminController : Controller
         return View(users);
     }
 
-    public IActionResult CreateUser() => View();
+    public async Task<IActionResult> CreateUser()
+    {
+        if (User.FindFirst("IsAdmin")?.Value != "True") return Forbid();
+
+        var vm = new CreateUserVM();
+        vm.RestaurantList = await GetRestaurantList();
+        return View(vm);
+    }
 
     [HttpPost]
     public async Task<IActionResult> CreateUser(CreateUserVM vm)
     {
         if (User.FindFirst("IsAdmin")?.Value != "True") return Forbid();
 
-        if (!ModelState.IsValid) return View(vm);
+        if (!ModelState.IsValid)
+        {
+            vm.RestaurantList = await GetRestaurantList();
+            return View(vm);
+        }
 
         // Tjek om email allerede eksisterer i samme restaurant
         var restaurantId = int.Parse(User.FindFirst("RestaurantId")!.Value);
         if (await _db.Users.AnyAsync(u => u.Email.ToLower() == vm.Email.ToLower() && u.RestaurantId == restaurantId))
         {
             ModelState.AddModelError(nameof(vm.Email), "Denne email er allerede registreret.");
+            vm.RestaurantList = await GetRestaurantList();
             return View(vm);
         }
 
@@ -81,6 +94,14 @@ public class AdminController : Controller
         TempData["NewUserEmail"] = vm.Email;
 
         return RedirectToAction(nameof(Index));
+    }
+
+    private async Task<List<SelectListItem>> GetRestaurantList()
+    {
+        return await _db.Restaurants
+            .OrderBy(r => r.Name)
+            .Select(r => new SelectListItem { Value = r.Id.ToString(), Text = r.Name })
+            .ToListAsync();
     }
 
     // CSV kun for egen restaurant

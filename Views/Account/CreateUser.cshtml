@@ -1,0 +1,59 @@
+﻿@model TimerApp.ViewModels.CreateUserVM
+@{
+    ViewData["Title"] = "Opret ny medarbejder";
+    Layout = "_Layout";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm p-4 rounded-4">
+            <h4 class="mb-4 text-center fw-bold">
+                <i class="bi bi-person-plus text-success me-2"></i>Opret ny medarbejder
+            </h4>
+
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success">@TempData["Success"]</div>
+            }
+
+            <form asp-action="CreateUser">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="mb-3">
+                    <label asp-for="Name" class="form-label fw-600">Navn</label>
+                    <input asp-for="Name" class="form-control" placeholder="Fx Jesper Jensen" />
+                    <span asp-validation-for="Name" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Email" class="form-label fw-600">Email</label>
+                    <input asp-for="Email" class="form-control" placeholder="Fx jesper@rh.dk" />
+                    <span asp-validation-for="Email" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="RestaurantId" class="form-label fw-600">Restaurant</label>
+                    <select asp-for="RestaurantId" asp-items="Model.RestaurantList" class="form-select">
+                        <option value="">-- Vælg restaurant --</option>
+                    </select>
+                    <span asp-validation-for="RestaurantId" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="TempPassword" class="form-label fw-600">Midlertidigt password</label>
+                    <input asp-for="TempPassword" type="password" class="form-control" />
+                    <span asp-validation-for="TempPassword" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3 form-check">
+                    <input asp-for="IsAdmin" class="form-check-input" />
+                    <label asp-for="IsAdmin" class="form-check-label">Gør til admin-bruger</label>
+                </div>
+
+                <button type="submit" class="btn btn-success w-100 rounded-pill">
+                    <i class="bi bi-person-plus me-2"></i>Opret medarbejder
+                </button>
+            </form>
+        </div>
+    </div>
+</div>

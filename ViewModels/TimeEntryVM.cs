@@ -9,10 +9,10 @@ public class TimeEntryVM
     public DateTime Date { get; set; }
 
     [Required]
-    public DateTime StartTime { get; set; } // ?? Ændret fra TimeSpan
+    public DateTime StartTime { get; set; }
 
     [Required]
-    public DateTime EndTime { get; set; } // ?? Ændret fra TimeSpan
+    public DateTime EndTime { get; set; }
 
     public string? Note { get; set; }
 }
