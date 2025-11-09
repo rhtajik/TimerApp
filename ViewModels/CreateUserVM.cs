@@ -8,6 +8,6 @@ public class CreateUserVM
     public string Email { get; set; } = "";
     public bool IsAdmin { get; set; }
     public int RestaurantId { get; set; }
-    public string TempPassword { get; set; } = ""; // 🎯 TILFØJET
+    public string TempPassword { get; set; } = ""; // 🎯 DENNE SKAL VÆRE HER
     public List<SelectListItem> RestaurantList { get; set; } = new();
 }

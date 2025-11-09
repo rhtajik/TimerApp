@@ -89,42 +89,57 @@ using (var scope = app.Services.CreateScope())
     // Seed users - KUN hvis tabellen er tom
     if (!db.Users.Any())
     {
+        // I Program.cs - Området hvor du "sikrer kendte passwords"
         var passwordHasher = new PasswordHasher<User>();
-        var restaurants = db.Restaurants.ToList();
 
-        foreach (var r in restaurants)
+        // Definer kendte brugere (tilpas med dine rigtige passwords)
+        var knownUsers = new[]
         {
-            string abbreviation = r.Name.ToLower() switch
-            {
-                "burgerhytten" => "bh",
-                "pullokiska" => "p",
-                "tervakoski" => "t",
-                _ => r.Name.Substring(0, 1).ToLower()
-            };
+    (Email: "admin.bh@rh.dk", Password: "AdminBH123"),
+    (Email: "user.bh@rh.dk", Password: "UserBH123"),
+    (Email: "admin.p@rh.dk", Password: "AdminP123"),
+    (Email: "user.p@rh.dk", Password: "UserP123"),
+    (Email: "admin.t@rh.dk", Password: "AdminT123"),
+    (Email: "user.t@rh.dk", Password: "UserT123")
+};
 
-            var admin = new User
-            {
-                Name = $"Admin {r.Name}",
-                Email = $"admin.{abbreviation}@rh.dk",
-                IsAdmin = true,
-                RestaurantId = r.Id,
-                MustChangePassword = false
-            };
-            admin.PasswordHash = passwordHasher.HashPassword(admin, "admin123");
+        foreach (var (Email, Password) in knownUsers)
+        {
+            var user = await db.Users.FirstOrDefaultAsync(u => u.Email == Email);
+            if (user == null) continue; // Hop over hvis bruger ikke findes
 
-            var user = new User
+            try
             {
-                Name = $"Medarbejder {r.Name}",
-                Email = $"user.{abbreviation}@rh.dk",
-                IsAdmin = false,
-                RestaurantId = r.Id,
-                MustChangePassword = false
-            };
-            user.PasswordHash = passwordHasher.HashPassword(user, "user123");
+                // ? Tjek om hash er tom
+                if (string.IsNullOrWhiteSpace(user.PasswordHash))
+                {
+                    throw new FormatException("Tom hash");
+                }
 
-            db.Users.AddRange(admin, user);
+                // ? Prøv at verificere
+                var result = passwordHasher.VerifyHashedPassword(user, user.PasswordHash, Password);
+
+                if (result == PasswordVerificationResult.Failed)
+                {
+                    Console.WriteLine($"?? Opdaterer password for {Email}");
+                    user.PasswordHash = passwordHasher.HashPassword(user, Password);
+                    db.Users.Update(user);
+                }
+                else
+                {
+                    Console.WriteLine($"? Password OK for {Email}");
+                }
+            }
+            catch (FormatException)
+            {
+                // ?? FANGER DIN FEJL OG FIKSER DEN!
+                Console.WriteLine($"? UGYLDIG HASH for {Email} - genopretter!");
+                user.PasswordHash = passwordHasher.HashPassword(user, Password);
+                db.Users.Update(user);
+            }
         }
-        db.SaveChanges();
+
+        await db.SaveChangesAsync();
     }
 
 
