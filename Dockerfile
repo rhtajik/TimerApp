@@ -1,11 +1,16 @@
 ﻿FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-WORKDIR /app
-COPY . ./
-RUN dotnet publish -c Release -o out
+WORKDIR /src
+COPY ["TimerApp/TimerApp.csproj", "TimerApp/"]
+RUN dotnet restore "TimerApp/TimerApp.csproj"
+COPY . .
+WORKDIR "/src/TimerApp"
+RUN dotnet build "TimerApp.csproj" -c Release -o /app/build
 
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+FROM build AS publish
+RUN dotnet publish "TimerApp.csproj" -c Release -o /app/publish /p:UseAppHost=false
+
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
-COPY --from=build /app/out .
+COPY --from=publish /app/publish .
 EXPOSE 80
-ENV ASPNETCORE_URLS=http://+:80
 ENTRYPOINT ["dotnet", "TimerApp.dll"]
