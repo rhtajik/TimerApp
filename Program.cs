@@ -19,6 +19,12 @@ builder.Services.AddDbContext<AppDbContext>(o => o.UseNpgsql(connectionString));
 builder.Services.AddScoped<PasswordHasher<User>>();
 
 
+Console.WriteLine($"DEBUG: Connection string found: {!string.IsNullOrEmpty(connectionString)}");
+if (!string.IsNullOrEmpty(connectionString))
+    Console.WriteLine($"DEBUG: First 50 chars: {connectionString.Substring(0, Math.Min(50, connectionString.Length))}...");
+
+
+
 // Services
 builder.Services.AddSingleton<EmailService>();
 builder.Services.AddScoped<AuditService>();
