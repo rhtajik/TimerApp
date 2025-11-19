@@ -12,15 +12,16 @@ builder.Services.AddControllersWithViews();
 
 // Database - PostgreSQL (tilpasset Render.com)
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+Uri? uri = null; // Deklarér her, så den er tilgængelig overalt
 
-// Hvis DefaultConnection mangler (som på Render), brug DATABASE_URL
+// Hvis DefaultConnection er tom (som på Render), brug DATABASE_URL
 if (string.IsNullOrWhiteSpace(connectionString))
 {
     var databaseUrl = builder.Configuration["DATABASE_URL"];
     if (!string.IsNullOrWhiteSpace(databaseUrl))
     {
         // Konvertér postgresql:// URL til Npgsql format
-        var uri = new Uri(databaseUrl);
+        uri = new Uri(databaseUrl);
         var userInfo = uri.UserInfo.Split(':');
         connectionString = $"Host={uri.Host};Database={uri.AbsolutePath.Substring(1)};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
     }
@@ -32,10 +33,15 @@ if (string.IsNullOrWhiteSpace(connectionString))
 builder.Services.AddDbContext<AppDbContext>(o => o.UseNpgsql(connectionString));
 builder.Services.AddScoped<PasswordHasher<User>>();
 
-// Debug output
-Console.WriteLine($"DEBUG: Connection string found: {!string.IsNullOrEmpty(connectionString)}");
-if (!string.IsNullOrEmpty(connectionString))
-    Console.WriteLine($"DEBUG: First 50 chars: {connectionString.Substring(0, Math.Min(50, connectionString.Length))}...");
+// Debug output (sikkert uden password)
+if (uri != null)
+{
+    Console.WriteLine($"DEBUG: Using Render DATABASE_URL - Host={uri.Host}");
+}
+else
+{
+    Console.WriteLine($"DEBUG: Using local connection string");
+}
 
 // Services
 builder.Services.AddSingleton<EmailService>();
