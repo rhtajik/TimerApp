@@ -11,41 +11,29 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 
 // Database - PostgreSQL (tilpasset Render.com)
-// Database - PostgreSQL (tilpasset Render.com)
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-Uri? uri = null;
+string connectionString;
 
-// PÅ RENDER: Prioritér DATABASE_URL (som Render automatisk tilføjer)
-var databaseUrl = builder.Configuration["DATABASE_URL"];
-if (!string.IsNullOrWhiteSpace(databaseUrl))
+// PÅ RENDER: Brug DATABASE_URL (prioritet #1)
+if (!string.IsNullOrEmpty(builder.Configuration["DATABASE_URL"]))
 {
-    // Konvertér postgresql:// URL til Npgsql format
-    uri = new Uri(databaseUrl);
+    var databaseUrl = builder.Configuration["DATABASE_URL"];
+    var uri = new Uri(databaseUrl);
     var userInfo = uri.UserInfo.Split(':');
     connectionString = $"Host={uri.Host};Database={uri.AbsolutePath.Substring(1)};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
-    Console.WriteLine($"DEBUG: Using Render DATABASE_URL - Host={uri.Host};Database={uri.AbsolutePath.Substring(1)}");
+    Console.WriteLine($"DEBUG: Using Render DATABASE_URL - Host={uri.Host}");
 }
-// LOKALT: Brug appsettings.json hvis DATABASE_URL ikke findes
-else if (string.IsNullOrWhiteSpace(connectionString))
-{
-    throw new InvalidOperationException("? Connection string mangler!");
-}
+// LOKALT: Brug appsettings.json (prioritet #2)
 else
 {
-    Console.WriteLine($"DEBUG: Using local appsettings.json connection");
+    connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    if (string.IsNullOrWhiteSpace(connectionString))
+        throw new InvalidOperationException("? Connection string mangler! Set DATABASE_URL på Render eller DefaultConnection i appsettings.json");
+
+    Console.WriteLine($"DEBUG: Using local appsettings.json");
 }
 
 builder.Services.AddDbContext<AppDbContext>(o => o.UseNpgsql(connectionString));
 builder.Services.AddScoped<PasswordHasher<User>>();
-// Debug output (sikkert uden password)
-if (uri != null)
-{
-    Console.WriteLine($"DEBUG: Using Render DATABASE_URL - Host={uri.Host}");
-}
-else
-{
-    Console.WriteLine($"DEBUG: Using local connection string");
-}
 
 // Services
 builder.Services.AddSingleton<EmailService>();
