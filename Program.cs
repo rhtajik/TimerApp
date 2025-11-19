@@ -11,28 +11,32 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 
 // Database - PostgreSQL (tilpasset Render.com)
+// Database - PostgreSQL (tilpasset Render.com)
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-Uri? uri = null; // Deklarér her, så den er tilgængelig overalt
+Uri? uri = null;
 
-// Hvis DefaultConnection er tom (som på Render), brug DATABASE_URL
-if (string.IsNullOrWhiteSpace(connectionString))
+// PÅ RENDER: Prioritér DATABASE_URL (som Render automatisk tilføjer)
+var databaseUrl = builder.Configuration["DATABASE_URL"];
+if (!string.IsNullOrWhiteSpace(databaseUrl))
 {
-    var databaseUrl = builder.Configuration["DATABASE_URL"];
-    if (!string.IsNullOrWhiteSpace(databaseUrl))
-    {
-        // Konvertér postgresql:// URL til Npgsql format
-        uri = new Uri(databaseUrl);
-        var userInfo = uri.UserInfo.Split(':');
-        connectionString = $"Host={uri.Host};Database={uri.AbsolutePath.Substring(1)};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
-    }
+    // Konvertér postgresql:// URL til Npgsql format
+    uri = new Uri(databaseUrl);
+    var userInfo = uri.UserInfo.Split(':');
+    connectionString = $"Host={uri.Host};Database={uri.AbsolutePath.Substring(1)};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
+    Console.WriteLine($"DEBUG: Using Render DATABASE_URL - Host={uri.Host};Database={uri.AbsolutePath.Substring(1)}");
 }
-
-if (string.IsNullOrWhiteSpace(connectionString))
+// LOKALT: Brug appsettings.json hvis DATABASE_URL ikke findes
+else if (string.IsNullOrWhiteSpace(connectionString))
+{
     throw new InvalidOperationException("? Connection string mangler!");
+}
+else
+{
+    Console.WriteLine($"DEBUG: Using local appsettings.json connection");
+}
 
 builder.Services.AddDbContext<AppDbContext>(o => o.UseNpgsql(connectionString));
 builder.Services.AddScoped<PasswordHasher<User>>();
-
 // Debug output (sikkert uden password)
 if (uri != null)
 {
