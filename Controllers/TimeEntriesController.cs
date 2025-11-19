@@ -28,33 +28,34 @@ public class TimeEntriesController : Controller
 
     public IActionResult Create() => View(new TimeEntryVM { Date = DateTime.Today });
 
-
-
-
-
     [HttpPost]
     public async Task<IActionResult> Create(TimeEntryVM vm)
     {
-        if (!ModelState.IsValid) return View(vm);
+        if (!ModelState.IsValid)
+        {
+            // Log fejl for debugging
+            Console.WriteLine("! ModelState invalid: " + string.Join(", ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)));
+            return View(vm);
+        }
 
         var uid = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+
+        // KOMBINER dato og tid korrekt
+        var startDateTime = vm.Date.Date.Add(vm.StartTime.TimeOfDay);
+        var endDateTime = vm.Date.Date.Add(vm.EndTime.TimeOfDay);
 
         _db.TimeEntries.Add(new TimeEntry
         {
             UserId = uid,
             Date = vm.Date.Date,
-            StartTime = DateTime.SpecifyKind(vm.StartTime, DateTimeKind.Utc),
-            EndTime = DateTime.SpecifyKind(vm.EndTime, DateTimeKind.Utc),
+            StartTime = DateTime.SpecifyKind(startDateTime, DateTimeKind.Utc),
+            EndTime = DateTime.SpecifyKind(endDateTime, DateTimeKind.Utc),
             Note = vm.Note
         });
 
         await _db.SaveChangesAsync();
         return RedirectToAction(nameof(Index));
     }
-    
-
-
-
 
     public async Task<IActionResult> MonthlySum()
     {
@@ -62,12 +63,10 @@ public class TimeEntriesController : Controller
         var year = DateTime.Now.Year;
         var month = DateTime.Now.Month;
 
-        // Hent posterne i hukommelsen (client-side)
         var entries = await _db.TimeEntries
                                .Where(t => t.UserId == uid && t.Date.Year == year && t.Date.Month == month)
                                .ToListAsync();
 
-        // Beregn timer
         decimal sum = entries.Sum(t => (decimal)(t.EndTime.HasValue ? (t.EndTime.Value - t.StartTime).TotalHours : 0));
         ViewBag.Sum = sum;
         return View();

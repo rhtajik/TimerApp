@@ -1,28 +1,35 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using TimerApp.Data;
 using TimerApp.Models;
+using TimerApp.Services;
 using TimerApp.ViewModels;
-using Microsoft.AspNetCore.Identity;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using System;
 
 namespace TimerApp.Controllers;
 
 public class AccountController : Controller
 {
     private readonly AppDbContext _db;
-    public AccountController(AppDbContext db) => _db = db;
+    private readonly AuditService _auditService;
+
+    public AccountController(AppDbContext db, AuditService auditService)
+    {
+        _db = db;
+        _auditService = auditService;
+    }
 
     [HttpGet]
     public async Task<IActionResult> Login()
     {
+        if (User.Identity?.IsAuthenticated == true && User.FindFirst("IsMainAdmin")?.Value == "True")
+            return RedirectToAction("Index", "Restaurants");
+
         var vm = new LoginVM
         {
             RestaurantList = await GetRestaurantList()
@@ -33,105 +40,124 @@ public class AccountController : Controller
     [HttpPost]
     public async Task<IActionResult> Login(LoginVM vm)
     {
-        Console.WriteLine($"=== LOGIN FORSØG ===");
-        Console.WriteLine($"Email input: '{vm.Email}'");
-        Console.WriteLine($"RestaurantId input: {vm.RestaurantId}");
-        Console.WriteLine($"Password input: '{vm.Password}' (længde: {vm.Password?.Length ?? 0})");
-
-        if (!ModelState.IsValid)
+        if (!await ValidateLoginModel(vm))
         {
-            Console.WriteLine("? ModelState er ugyldig! Fejldetaljer:");
-            foreach (var key in ModelState.Keys)
+            vm.RestaurantList = await GetRestaurantList();
+            return View(vm);
+        }
+
+        // **SUPER ADMIN LOGIN - uden restaurant valg**
+        if (vm.Email.ToLower() == "superadmin@rh.dk")
+        {
+            var superAdmin = await _db.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == "superadmin@rh.dk" && u.IsMainAdmin);
+            if (superAdmin != null && VerifyPassword(superAdmin, vm.Password))
             {
-                var errors = ModelState[key].Errors;
-                if (errors.Any())
-                {
-                    Console.WriteLine($"   - Felt: {key}");
-                    foreach (var error in errors)
-                    {
-                        Console.WriteLine($"     Fejl: {error.ErrorMessage}");
-                    }
-                }
+                await SignInSuperAdmin(superAdmin);
+                return RedirectToAction("Index", "Restaurants");
             }
 
+            ModelState.AddModelError("", "Ugyldigt login.");
             vm.RestaurantList = await GetRestaurantList();
-            Console.WriteLine("   RestaurantList reloades...");
             return View(vm);
         }
 
-        Console.WriteLine("? ModelState er gyldig, fortsætter med brugersøgning...");
-
+        // **NORMAL BRUGER LOGIN - med restaurant valg**
         var user = await _db.Users
             .Include(u => u.Restaurant)
-            .FirstOrDefaultAsync(u => EF.Functions.ILike(u.Email, vm.Email) && u.RestaurantId == vm.RestaurantId);
+            .FirstOrDefaultAsync(u => u.Email.ToLower() == vm.Email.ToLower() &&
+                                     u.RestaurantId == vm.RestaurantId &&
+                                     !u.IsMainAdmin);
 
-        if (user == null)
+        if (user == null || !VerifyPassword(user, vm.Password))
         {
-            Console.WriteLine($"? FEJL: Bruger IKKE fundet! Email='{vm.Email}', RestaurantId={vm.RestaurantId}");
             ModelState.AddModelError("", "Ugyldigt login.");
             vm.RestaurantList = await GetRestaurantList();
             return View(vm);
         }
 
-        // ? DEFENSIVT TJEK: Håndter ødelagte hashes
-        if (string.IsNullOrWhiteSpace(user.PasswordHash))
+        await SignInUser(user, vm.RestaurantId.ToString());
+
+        if (user.MustChangePassword)
+            return RedirectToAction("ChangePassword", new { firstLogin = true });
+
+        return RedirectToAction("Index", "Home");
+    }
+
+    private async Task<bool> ValidateLoginModel(LoginVM vm)
+    {
+        if (string.IsNullOrWhiteSpace(vm.Email) || string.IsNullOrWhiteSpace(vm.Password))
         {
-            Console.WriteLine($"? LOGIN FEJLET: Tom hash for {user.Email}");
-            ModelState.AddModelError("", "Ugyldigt login.");
-            vm.RestaurantList = await GetRestaurantList();
-            return View(vm);
+            ModelState.AddModelError("", "Email og password er påkrævet.");
+            return false;
         }
+
+        // Super admin behøver ikke restaurant
+        if (vm.Email.ToLower() == "superadmin@rh.dk")
+            return true;
+
+        // Normale brugere SKAL vælge restaurant
+        if (vm.RestaurantId == 0)
+        {
+            ModelState.AddModelError(nameof(vm.RestaurantId), "Vælg en restaurant.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool VerifyPassword(User? user, string password)
+    {
+        if (user == null || string.IsNullOrWhiteSpace(user.PasswordHash))
+            return false;
 
         var passwordHasher = new PasswordHasher<User>();
-        PasswordVerificationResult result;
         try
         {
-            result = passwordHasher.VerifyHashedPassword(user, user.PasswordHash, vm.Password);
+            return passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password)
+                   != PasswordVerificationResult.Failed;
         }
-        catch (FormatException)
+        catch
         {
-            Console.WriteLine($"? LOGIN FEJLET: Ugyldig hash format for {user.Email}");
-            ModelState.AddModelError("", "Ugyldigt login.");
-            vm.RestaurantList = await GetRestaurantList();
-            return View(vm);
+            return false;
         }
+    }
 
-        if (result == PasswordVerificationResult.Failed)
+    private async Task SignInSuperAdmin(User user)
+    {
+        var claims = new List<Claim>
         {
-            ModelState.AddModelError("", "Ugyldigt login.");
-            vm.RestaurantList = await GetRestaurantList();
-            return View(vm);
-        }
+            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new(ClaimTypes.Name, user.Name),
+            new("IsAdmin", "True"),
+            new("IsMainAdmin", "True"),
+            new("MustChangePassword", "False")
+        };
 
-        // ? Success - log bruger info
-        Console.WriteLine($"? LOGIN: Bruger fundet: {user.Email}, Admin={user.IsAdmin}, MustChangePassword={user.MustChangePassword}");
-        Console.WriteLine($"   PW Hash: {user.PasswordHash.Substring(0, 20)}...");
+        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        await HttpContext.SignInAsync(new ClaimsPrincipal(identity), new AuthenticationProperties
+        {
+            IsPersistent = true,
+            ExpiresUtc = DateTimeOffset.UtcNow.AddHours(8)
+        });
+    }
 
+    private async Task SignInUser(User user, string restaurantId)
+    {
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new(ClaimTypes.Name, user.Name),
             new("IsAdmin", user.IsAdmin.ToString()),
-            new("RestaurantId", user.RestaurantId.ToString()),
+            new("RestaurantId", restaurantId),
             new("MustChangePassword", user.MustChangePassword.ToString())
         };
 
-        var id = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-
-        // ONLINE-SIKKER cookie
-        await HttpContext.SignInAsync(new ClaimsPrincipal(id), new AuthenticationProperties
+        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        await HttpContext.SignInAsync(new ClaimsPrincipal(identity), new AuthenticationProperties
         {
             IsPersistent = true,
             ExpiresUtc = DateTimeOffset.UtcNow.AddHours(8)
         });
-
-        // Redirect til ChangePassword hvis første login
-        if (user.MustChangePassword)
-        {
-            return RedirectToAction("ChangePassword", new { firstLogin = true });
-        }
-
-        return RedirectToAction("Index", "Home");
     }
 
     public async Task<IActionResult> Logout()
@@ -160,18 +186,11 @@ public class AccountController : Controller
 
         var uid = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
         var user = await _db.Users.FindAsync(uid);
-
-        if (user == null)
-        {
-            ModelState.AddModelError("", "Bruger ikke fundet.");
-            ViewBag.FirstLogin = firstLogin;
-            return View(vm);
-        }
+        if (user == null) return NotFound();
 
         var passwordHasher = new PasswordHasher<User>();
 
-        // Ved første login: Tjek ikke gammelt password
-        if (!firstLogin)
+        if (!firstLogin && user.PasswordHash != null)
         {
             var verifyResult = passwordHasher.VerifyHashedPassword(user, user.PasswordHash, vm.OldPassword);
             if (verifyResult == PasswordVerificationResult.Failed)
@@ -186,21 +205,13 @@ public class AccountController : Controller
         user.MustChangePassword = false;
         await _db.SaveChangesAsync();
 
-        // Opdater claim efter skift
-        var claims = User.Claims.ToList();
-        var mustChangeClaim = claims.FirstOrDefault(c => c.Type == "MustChangePassword");
-        if (mustChangeClaim != null)
-        {
-            claims.Remove(mustChangeClaim);
-            claims.Add(new Claim("MustChangePassword", "False"));
-        }
-
-        await HttpContext.SignInAsync(new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme)));
+        // Log password change
+        await _auditService.LogPasswordChangedAsync(user.Id, uid,
+            HttpContext.Connection.RemoteIpAddress?.ToString());
 
         return RedirectToAction("Index", "Home");
     }
 
-    // Helper metode
     private async Task<List<SelectListItem>> GetRestaurantList()
     {
         return await _db.Restaurants

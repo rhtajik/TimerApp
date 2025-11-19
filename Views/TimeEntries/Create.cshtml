@@ -24,12 +24,12 @@
                 <div class="row g-3">
                     <div class="col">
                         <label class="form-label fw-600">Start tid</label>
-                        <input asp-for="StartTime" class="form-control" type="time" />
+                        <input asp-for="StartTime" class="form-control" type="time" step="60" />
                         <span asp-validation-for="StartTime" class="text-danger small"></span>
                     </div>
                     <div class="col">
                         <label class="form-label fw-600">Slut tid</label>
-                        <input asp-for="EndTime" class="form-control" type="time" />
+                        <input asp-for="EndTime" class="form-control" type="time" step="60" />
                         <span asp-validation-for="EndTime" class="text-danger small"></span>
                     </div>
                 </div>

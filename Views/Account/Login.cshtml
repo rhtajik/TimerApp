@@ -5,41 +5,39 @@
 }
 
 <div class="row justify-content-center">
-    <div class="col-md-4 col-lg-3">
+    <div class="col-md-5 col-lg-4">
         <div class="card shadow-sm p-4 rounded-4">
             <h4 class="mb-4 text-center fw-bold">
                 <i class="bi bi-box-arrow-in-right text-danger me-2"></i>Log ind
             </h4>
 
             <form asp-action="Login">
-                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger small"></div>
 
                 <div class="mb-3">
-                    <label asp-for="Email" class="form-label fw-600">E-mail</label>
-                    <input asp-for="Email" class="form-control" placeholder=" indtast din e-mail" />
+                    <label asp-for="Email" class="form-label fw-600">Email</label>
+                    <input asp-for="Email" class="form-control" placeholder="din@email.dk" />
                     <span asp-validation-for="Email" class="text-danger"></span>
                 </div>
 
                 <div class="mb-3">
-                    <label asp-for="Password" class="form-label fw-600">Adgangskode</label>
-                    <input asp-for="Password" type="password" class="form-control" placeholder="Adgangskode" />
+                    <label asp-for="RestaurantId" class="form-label fw-600">Restaurant</label>
+                    <select asp-for="RestaurantId" asp-items="Model.RestaurantList" class="form-select">
+                        <option value="">-- Vælg restaurant --</option>
+                    </select>
+                    <span asp-validation-for="RestaurantId" class="text-danger"></span>
+                </div>
+
+                <div class="mb-4">
+                    <label asp-for="Password" class="form-label fw-600">Password</label>
+                    <input asp-for="Password" type="password" class="form-control" />
                     <span asp-validation-for="Password" class="text-danger"></span>
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label fw-600">Restaurant</label>
-                    <select asp-for="RestaurantId" asp-items="Model.RestaurantList" class="form-select"></select>
-                    <span asp-validation-for="RestaurantId" class="text-danger small"></span>
-                </div>
-
                 <button type="submit" class="btn btn-primary w-100 rounded-pill">
-                    <i class="bi bi-box-arrow-in-right me-2"></i>Log ind
+                    <i class="bi bi-arrow-right-circle me-2"></i>Log ind
                 </button>
             </form>
-
-            <div class="text-center mt-3">
-                <small class="text-muted">RH Timer App &copy; 2025</small>
-            </div>
         </div>
     </div>
 </div>

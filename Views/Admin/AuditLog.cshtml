@@ -1,0 +1,46 @@
+﻿@model IEnumerable<TimerApp.Models.AuditLog>
+@{
+    ViewData["Title"] = "Audit Log";
+    Layout = "_Layout";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold mb-0">
+        <i class="bi bi-journal-text text-info me-2"></i>Audit Log
+    </h2>
+    <a class="btn btn-sm btn-outline-secondary rounded-pill" asp-action="Index">
+        <i class="bi bi-arrow-left me-1"></i>Tilbage til admin
+    </a>
+</div>
+
+<div class="card shadow-sm rounded-4 p-3">
+    <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Tidspunkt</th>
+                    <th>Handling</th>
+                    <th>Bruger</th>
+                    <th>Udført af</th>
+                    <th>IP-adresse</th>
+                    <th>Detaljer</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var log in Model)
+                {
+                    <tr>
+                        <td>@log.Timestamp.ToString("dd/MM HH:mm")</td>
+                        <td>
+                            <span class="badge bg-info">@log.Action</span>
+                        </td>
+                        <td>@log.User.Name</td>
+                        <td>@(log.PerformedByUser?.Name ?? "System")</td>
+                        <td><code>@log.IpAddress</code></td>
+                        <td class="small text-muted">@log.Details</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

@@ -1,14 +1,14 @@
 @model TimerApp.ViewModels.CreateUserVM
 @{
-    ViewData["Title"] = "Ny medarbejder";
+    ViewData["Title"] = "Opret ny medarbejder";
     Layout = "_Layout";
 }
 
 <div class="row justify-content-center">
-    <div class="col-md-5 col-lg-4">
+    <div class="col-md-6">
         <div class="card shadow-sm p-4 rounded-4">
             <h4 class="mb-4 text-center fw-bold">
-                <i class="bi bi-person-plus text-danger me-2"></i>Ny medarbejder
+                <i class="bi bi-person-plus text-success me-2"></i>Opret ny medarbejder
             </h4>
 
             @if (TempData["TempPassword"] != null)
@@ -42,8 +42,8 @@
                     <label class="form-check-label" for="adminCheck">Admin-bruger</label>
                 </div>
 
-                <button type="submit" class="btn btn-primary w-100 rounded-pill">
-                    <i class="bi bi-shield-check me-2"></i>Opret med automatisk adgangskode
+                <button type="submit" class="btn btn-success w-100 rounded-pill">
+                    <i class="bi bi-person-plus me-2"></i>Opret med automatisk adgangskode
                 </button>
 
                 <div class="text-center mt-3">

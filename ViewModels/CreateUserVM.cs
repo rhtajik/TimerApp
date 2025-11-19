@@ -1,13 +1,19 @@
-﻿using Microsoft.AspNetCore.Mvc.Rendering;
+﻿using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 
 namespace TimerApp.ViewModels;
 
 public class CreateUserVM
 {
+    [Required(ErrorMessage = "Navn er påkrævet")]
     public string Name { get; set; } = "";
+
+    [Required(ErrorMessage = "Email er påkrævet")]
+    [EmailAddress(ErrorMessage = "Ugyldig email-format")]
     public string Email { get; set; } = "";
+
     public bool IsAdmin { get; set; }
-    public int RestaurantId { get; set; }
-    public string TempPassword { get; set; } = ""; // 🎯 DENNE SKAL VÆRE HER
-    public List<SelectListItem> RestaurantList { get; set; } = new();
+
+    [ValidateNever]
+    public string TempPassword { get; set; } = "";
 }

@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace TimerApp.Models;
 
 public class User
@@ -9,14 +7,13 @@ public class User
     public string Email { get; set; } = "";
     public string PasswordHash { get; set; } = "";
     public bool IsAdmin { get; set; }
+    public bool IsMainAdmin { get; set; } = false; // NY: Super admin flag
     public int RestaurantId { get; set; }
     public Restaurant Restaurant { get; set; } = null!;
-
-    // ? NYT: Skal brugeren skifte password ved første login?
     public bool MustChangePassword { get; set; } = true;
-
-    // ? NYT: Hvem oprettede brugeren (til sporbarhed)
     public int? CreatedByUserId { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow; // NY: Tidsstempel
+    public string? CreatedByIp { get; set; } // NY: IP-adresse
 
     public ICollection<TimeEntry> TimeEntries { get; set; } = new List<TimeEntry>();
 }

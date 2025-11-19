@@ -1,0 +1,35 @@
+﻿@model TimerApp.ViewModels.Restaurant.CreateRestaurantVM 
+@{
+    ViewData["Title"] = "Opret restaurant";
+    Layout = "_Layout";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm p-4 rounded-4">
+            <h4 class="mb-4 text-center fw-bold">
+                <i class="bi bi-shop text-success me-2"></i>Opret restaurant
+            </h4>
+
+            <form asp-action="Create">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger small"></div>
+
+                <div class="mb-3">
+                    <label asp-for="Name" class="form-label fw-600">Restaurant navn</label>
+                    <input asp-for="Name" class="form-control" placeholder="F.eks. Burger Palace" />
+                    <span asp-validation-for="Name" class="text-danger"></span>
+                </div>
+
+                <button type="submit" class="btn btn-success w-100 rounded-pill">
+                    <i class="bi bi-check-circle me-2"></i>Opret
+                </button>
+
+                <div class="text-center mt-3">
+                    <a class="btn btn-sm btn-outline-secondary rounded-pill px-3" asp-action="Index">
+                        <i class="bi bi-x-circle me-1"></i>Annuller
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

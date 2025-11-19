@@ -13,11 +13,29 @@
     </a>
 </div>
 
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+        <a class="nav-link active" asp-action="Index">Medarbejdere</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" asp-action="AuditLog">Audit Log</a>
+    </li>
+</ul>
+
 <div class="mb-3">
     <a class="btn btn-success" asp-action="CreateUser">
         <i class="bi bi-person-plus me-1"></i>Tilføj medarbejder
     </a>
-    <a class="btn btn-outline-secondary" asp-action="ExportCsv" asp-route-year="@DateTime.Now.Year" asp-route-month="@DateTime.Now.Month">
+    <a class="btn btn-outline-secondary" asp-action="ExportCsv"
+       asp-route-year="@DateTime.Now.Year" asp-route-month="@DateTime.Now.Month">
         <i class="bi bi-download me-1"></i>Download CSV (@DateTime.Now.ToString("MMMM yyyy"))
     </a>
 </div>
@@ -42,7 +60,8 @@
                         <span class="badge bg-danger rounded-pill">@(u.TimeEntries?.Sum(t => t.Hours) ?? 0)</span>
                     </td>
                     <td class="text-end">
-                        <form asp-action="DeleteUser" asp-route-id="@u.Id" method="post" class="d-inline" onsubmit="return confirm('Slet medarbejder OG alle dennes timer?');">
+                        <form asp-action="DeleteUser" asp-route-id="@u.Id" method="post" class="d-inline"
+                              onsubmit="return confirm('Slet medarbejder OG alle dennes timer?');">
                             <button type="submit" class="btn btn-sm btn-outline-danger">
                                 <i class="bi bi-trash"></i>
                             </button>
@@ -53,3 +72,83 @@
         </tbody>
     </table>
 </div>
+
+<!-- Temp Password Modal -->
+<div class="modal fade" id="tempPasswordModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-key-fill me-2"></i>Midlertidig adgangskode
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <p class="mb-2">Denne adgangskode vises kun én gang!</p>
+                <div class="input-group mb-3">
+                    <input type="text" id="tempPasswordField" class="form-control form-control-lg text-center"
+                           readonly style="font-family: monospace;">
+                    <button class="btn btn-outline-primary" type="button" id="copyButton">
+                        <i class="bi bi-clipboard"></i>
+                    </button>
+                </div>
+                <p class="small text-muted">For: <strong id="userEmail"></strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-check-circle me-1"></i>Forstået
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Initialize clipboard
+        var clipboard = new ClipboardJS('#copyButton', {
+            text: function() {
+                return document.getElementById('tempPasswordField').value;
+            }
+        });
+
+        clipboard.on('success', function(e) {
+            var btn = document.getElementById('copyButton');
+            btn.innerHTML = '<i class="bi bi-check"></i>';
+            setTimeout(() => {
+                btn.innerHTML = '<i class="bi bi-clipboard"></i>';
+            }, 2000);
+        });
+
+        // Håndter modal ved brugeroprettelse
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form[asp-action="CreateUser"]');
+            if (form) {
+                form.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    const formData = new FormData(form);
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.success) {
+                            document.getElementById('tempPasswordField').value = data.tempPassword;
+                            document.getElementById('userEmail').textContent = data.email;
+                            new bootstrap.Modal(document.getElementById('tempPasswordModal')).show();
+                            form.reset();
+                        }
+                    } else {
+                        const html = await response.text();
+                        document.open();
+                        document.write(html);
+                        document.close();
+                    }
+                });
+            }
+        });
+    </script>
+}

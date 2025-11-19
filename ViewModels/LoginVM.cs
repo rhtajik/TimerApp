@@ -1,6 +1,6 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using System.ComponentModel.DataAnnotations;
 
 namespace TimerApp.ViewModels;
 
@@ -8,18 +8,15 @@ public class LoginVM
 {
     [Required(ErrorMessage = "Email er påkrævet")]
     [EmailAddress(ErrorMessage = "Ugyldig email-format")]
-    [Display(Name = "Email")]
-    public string Email { get; set; } = null!;
+    public string Email { get; set; } = "";
 
     [Required(ErrorMessage = "Password er påkrævet")]
     [DataType(DataType.Password)]
-    [Display(Name = "Password")]
-    public string Password { get; set; } = null!;
+    public string Password { get; set; } = "";
 
-    [Required(ErrorMessage = "Vælg en restaurant")]
-    [Display(Name = "Restaurant")]
+    // **FJERNET [Required] - super admin behøver ikke vælge restaurant**
     public int RestaurantId { get; set; }
 
-    [ValidateNever] // ?? Dette er løsningen!
+    [ValidateNever]
     public List<SelectListItem> RestaurantList { get; set; } = new();
 }

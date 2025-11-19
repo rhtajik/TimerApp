@@ -1,0 +1,80 @@
+﻿@model IEnumerable<TimerApp.ViewModels.Restaurant.RestaurantVM>
+@{
+    ViewData["Title"] = "Restaurant Administration";
+    Layout = "_Layout";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold mb-0">
+        <i class="bi bi-shop text-danger me-2"></i>Restauranter
+    </h2>
+    <a class="btn btn-sm btn-outline-secondary" asp-controller="Home" asp-action="Index">
+        <i class="bi bi-house-door me-1"></i>Tilbage
+    </a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="mb-3">
+    <a class="btn btn-success" asp-action="Create">
+        <i class="bi bi-plus-circle me-1"></i>Opret ny restaurant
+    </a>
+</div>
+
+<div class="card shadow-sm rounded-4 p-3">
+    <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+            <tr>
+                <th>Restaurant</th>
+                <th class="text-center">Antal medarbejdere</th>
+                <th class="text-end">Handlinger</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var r in Model)
+            {
+                <tr>
+                    <td class="fw-500">@r.Name</td>
+                    <td class="text-center">
+                        <span class="badge bg-danger rounded-pill">@r.UserCount</span>
+                    </td>
+                    <td class="text-end">
+                        <!-- Rediger -->
+                        <a class="btn btn-sm btn-outline-primary me-1" asp-action="Edit" asp-route-id="@r.Id">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+
+                        <!-- ✅ NY: Opret Admin knap -->
+                        <a class="btn btn-sm btn-outline-success me-1" asp-action="CreateAdmin" asp-route-restaurantId="@r.Id"
+                           onclick="return confirm('Opret admin-bruger for @r.Name med password Admin123!?');">
+                            <i class="bi bi-person-plus"></i> Opret Admin
+                        </a>
+
+                        <!-- Slet -->
+                        <form asp-action="Delete" asp-route-id="@r.Id" method="post" class="d-inline"
+                              onsubmit="return confirm('Sikker på at slette denne restaurant?');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger"
+                                    @(r.UserCount > 0 ? "disabled" : "")>
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
