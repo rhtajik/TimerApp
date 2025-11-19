@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 using TimerApp.Data;
 using TimerApp.Models;
 using TimerApp.ViewModels;
+using Npgsql;
+
 
 namespace TimerApp.Controllers;
 
@@ -33,7 +35,6 @@ public class TimeEntriesController : Controller
     {
         if (!ModelState.IsValid)
         {
-            // Log fejl for debugging
             Console.WriteLine("! ModelState invalid: " + string.Join(", ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)));
             return View(vm);
         }
@@ -47,7 +48,7 @@ public class TimeEntriesController : Controller
         _db.TimeEntries.Add(new TimeEntry
         {
             UserId = uid,
-            Date = vm.Date.Date,
+            Date = DateTime.SpecifyKind(vm.Date.Date, DateTimeKind.Utc), // <-- FIX HER!
             StartTime = DateTime.SpecifyKind(startDateTime, DateTimeKind.Utc),
             EndTime = DateTime.SpecifyKind(endDateTime, DateTimeKind.Utc),
             Note = vm.Note
