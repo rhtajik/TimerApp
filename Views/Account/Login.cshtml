@@ -21,17 +21,17 @@
                 </div>
 
                 <div class="mb-3">
+                    <label asp-for="Password" class="form-label fw-600">Password</label>
+                    <input asp-for="Password" type="password" class="form-control" />
+                    <span asp-validation-for="Password" class="text-danger"></span>
+                </div>
+
+                <div class="mb-4">
                     <label asp-for="RestaurantId" class="form-label fw-600">Restaurant</label>
                     <select asp-for="RestaurantId" asp-items="Model.RestaurantList" class="form-select">
                         <option value="">-- Vælg restaurant --</option>
                     </select>
                     <span asp-validation-for="RestaurantId" class="text-danger"></span>
-                </div>
-
-                <div class="mb-4">
-                    <label asp-for="Password" class="form-label fw-600">Password</label>
-                    <input asp-for="Password" type="password" class="form-control" />
-                    <span asp-validation-for="Password" class="text-danger"></span>
                 </div>
 
                 <button type="submit" class="btn btn-primary w-100 rounded-pill">
