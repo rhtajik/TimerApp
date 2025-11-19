@@ -10,26 +10,35 @@ var builder = WebApplication.CreateBuilder(args);
 // Services
 builder.Services.AddControllersWithViews();
 
-// Database - PostgreSQL (tilpasset Render.com)
-string connectionString;
+// === EXTREME DEBUG ===
+Console.WriteLine($"=== ENVIRONMENT VARIABLES ===");
+Console.WriteLine($"DATABASE_URL exists: {!string.IsNullOrEmpty(builder.Configuration["DATABASE_URL"])}");
+Console.WriteLine($"ConnectionStrings__DefaultConnection exists: {!string.IsNullOrEmpty(builder.Configuration["ConnectionStrings:DefaultConnection"])}");
+Console.WriteLine($"All keys: {string.Join(", ", builder.Configuration.AsEnumerable().Select(k => k.Key))}");
+// === END DEBUG ===
 
-// PÅ RENDER: Brug DATABASE_URL (prioritet #1)
-if (!string.IsNullOrEmpty(builder.Configuration["DATABASE_URL"]))
+// Database - PostgreSQL (tilpasset Render.com)
+string connectionString = "";
+
+// FORCE BRUG AF DATABASE_URL PÅ RENDER
+var databaseUrl = builder.Configuration["DATABASE_URL"];
+if (!string.IsNullOrWhiteSpace(databaseUrl))
 {
-    var databaseUrl = builder.Configuration["DATABASE_URL"];
+    Console.WriteLine($"DEBUG: DATABASE_URL found: {databaseUrl.Substring(0, 50)}...");
     var uri = new Uri(databaseUrl);
     var userInfo = uri.UserInfo.Split(':');
     connectionString = $"Host={uri.Host};Database={uri.AbsolutePath.Substring(1)};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
-    Console.WriteLine($"DEBUG: Using Render DATABASE_URL - Host={uri.Host}");
+    Console.WriteLine($"DEBUG: Converted to Npgsql format: Host={uri.Host};Database={uri.AbsolutePath.Substring(1)};Username=***;Password=***");
 }
-// LOKALT: Brug appsettings.json (prioritet #2)
+// Fallback til appsettings.json (kun lokalt)
 else
 {
     connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
     if (string.IsNullOrWhiteSpace(connectionString))
-        throw new InvalidOperationException("? Connection string mangler! Set DATABASE_URL på Render eller DefaultConnection i appsettings.json");
-
-    Console.WriteLine($"DEBUG: Using local appsettings.json");
+    {
+        throw new InvalidOperationException("? KRITISK FEJL: Hverken DATABASE_URL eller DefaultConnection er sat! Set DATABASE_URL på Render.");
+    }
+    Console.WriteLine($"DEBUG: Fallback til appsettings.json (SQL Server) - men dette vil fejle med Npgsql!");
 }
 
 builder.Services.AddDbContext<AppDbContext>(o => o.UseNpgsql(connectionString));
