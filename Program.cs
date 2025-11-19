@@ -10,12 +10,11 @@ var builder = WebApplication.CreateBuilder(args);
 // Services
 builder.Services.AddControllersWithViews();
 
-// Database - SQL Server
+// Database - PostgreSQL  Server
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 if (string.IsNullOrWhiteSpace(connectionString))
     throw new InvalidOperationException("? Connection string mangler!");
-
-builder.Services.AddDbContext<AppDbContext>(o => o.UseSqlServer(connectionString));
+builder.Services.AddDbContext<AppDbContext>(o => o.UseNpgsql(connectionString));
 
 builder.Services.AddScoped<PasswordHasher<User>>();
 
